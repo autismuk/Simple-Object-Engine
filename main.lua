@@ -231,6 +231,9 @@ end
 
 -- TODO: tag Query design ? 1/2/any ?
 -- TODO: Query executor given method/function parameter.
+-- TODO: Frame updater
+-- TODO: Messaging System
+-- TODO: Event Systen
 
 local o1 = SOE:getBaseClass():new({})
 local o2 = SOE:getBaseClass():new({})
