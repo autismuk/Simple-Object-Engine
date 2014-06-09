@@ -19,6 +19,8 @@ local SOEBaseObject
 
 local SOE = Base:new()
 
+SOE.decorationList = { "delete","tag","detag","name","isAlive"} 							--  methods that decorate objects.
+
 --//	SOE Constructor
 
 function SOE:initialise()
@@ -63,6 +65,8 @@ function SOE:getBaseClass()
 	return SOEBaseObject 
 end 
 
+SOE.decorationList = { "delete","tag","detag","name","isAlive"}
+
 --//	Attach an object to the system. It is added to the indices and decorated with the needed default functions, currently tag, detag, name and delete.
 --//	@object 	[object]		Object to attach to SOE
 
@@ -70,11 +74,7 @@ function SOE:attach(object)
 	assert(object ~= nil and self.objects[object] == nil,"Bad Game Object Attached") 		-- check parameter is present and not already in objects list.
 	self.objects[object] = object 															-- add to object list.
 	self.objectCount = self.objectCount + 1 												-- increment the object counter.
-	self.delete = SOEBaseObject.delete 														-- add decorations
-	self.tag = SOEBaseObject.tag
-	self.detag = SOEBaseObject.detag
-	self.name = SOEBaseObject.name
-	self.isAlive = SOEBaseObject.isAlive 													-- we decorate this one but we do not remove it - so we can check life !
+	for _,name in ipairs(SOE.decorationList) do self[name] = SOEBaseObject[name] end  		-- add functions from decoration list
 end 
 
 --//	Detach an object from the system. It removes its reference, any usage in SOE.e and removes itself from the tag lists
@@ -93,7 +93,7 @@ function SOE:detach(object)
 			self.tagIndexCount[name] = self.tagIndexCount[name] - 1 						-- decrement the tag list index count
 		end 
 	end
-	self.delete = nil self.tag = nil self.detag = nil self.name = nil						-- remove decorations.
+	for _,name in ipairs(SOE.decorationList) do self[name] = nil end  						-- remove functions from decoration list
 end 
 
 --//%	Add a tag to a specific object. Objects should add tags to themselves using the tag() method.
@@ -154,6 +154,38 @@ function SOE:createTagList(tags)
 	return tagList
 end 
 
+--//	Query the tag database, return a list of objects with the tag(s) or nil if there are none. Note that multiple tag queries
+--// 	are not optimised or cache, but single tag queries are very fast.
+--//
+--//	@tagList 	[table]				table of tags (if empty, returns all objects)
+--//	@return 	[hash]				table of ref => ref of matching tags, or nil.
+
+function SOE:query(tagList)
+	assert(type(tagList) == "table") 														-- must be a table
+	if #tagList == 0 then  																	-- an empty table returns the whole lot
+		if self.objectCount > 0 then return self.objects else return nil end 				-- return the object list or nil
+	end 
+	if #tagList == 1 then 																	-- if one item.
+		return self.tagLists[tagList[1]] 													-- then return the taglist for that tag (the first and only one)
+	end
+	for i = 1,#tagList do 																	-- check that all the tags have at least one value, otherwise
+		if self.tagLists[tagList[i]] == nil then return nil end  							-- we return nothing.
+	end
+	table.sort(tagList,function(a,b) return self.tagIndexCount[a]<self.tagIndexCount[b] end)-- sort taglist so smallest number of items first, speeds search.
+	local result = {} 																		-- result hash
+	for _,ref in pairs(self.tagLists[tagList[1]]) do 										-- work through all the objects in the list of the first query tag.
+		local isOk = true 
+		for i = 2,#tagList do 																-- check keys in 2,3,4,5 etc. to see if they are present.
+			if self.tagLists[tagList[i]][ref] == nil then 									-- if not present
+				isOk = false  																-- mark as not passing
+				break 																		-- break out of the loop
+			end 
+		end
+		if isOk then result[ref] = ref end 													-- if matches all add to the result list.
+	end
+	return result
+end 
+
 SOE:initialise() 																			-- create the single instance
 SOE.new = nil 																				-- disable its constructor.
 
@@ -178,13 +210,13 @@ end
 --//	@data 	[table]					Object data for the game object.
 
 function SOEBaseObject:constructor(data) 	 												-- default constructor
-	print("Constructor",tostring(self))
+	--print("Constructor",tostring(self))
 end 
 
 --//	Destructor for game object
 
 function SOEBaseObject:destructor() 	 													-- default destructor.
-	print("Destructor",tostring(self))
+	--print("Destructor",tostring(self))
 end 
 
 --//	Instruct object to self-destroy, also removes itself from the system.
@@ -219,6 +251,15 @@ function SOEBaseObject:detag(tagList)
 	for _,tag in ipairs(tagList) do self.__SOE:removeTag(tag,self) end 						-- remove all the tags.
 end
 
+--//	Query the tag database, return a list of objects with the tag(s) or nil if there are none.
+--//	@tagList 	[string]			CSV List of tags, or table of tags.
+--//	@return 	[hash]				table of ref => ref of matching tags, or nil.
+
+function SOEBaseObject:query(tagList)
+	if type(tagList) == "string" then tagList = self.__SOE:createTagList(tagList) end 		-- convert to a list of tags if not a list already.
+	return self.__SOE:query(tagList)  														-- evaluate the query.
+end 
+
 --//	Name an object - make it accessible via SOE.e 
 --//	@name 		[string] 			identifier to use.
 
@@ -226,25 +267,30 @@ function SOEBaseObject:name(name)
 	self.__SOE:nameObject(name:lower():gsub("%s",""),self) 									-- name the object
 end 
 
+_G.SOE = SOE
+
 --- ************************************************************************************************************************************************************************
 --- ************************************************************************************************************************************************************************
 
--- TODO: tag Query design ? 1/2/any ?
 -- TODO: Query executor given method/function parameter.
 -- TODO: Frame updater
 -- TODO: Messaging System
 -- TODO: Event Systen
 
+print("Start")
 local o1 = SOE:getBaseClass():new({})
 local o2 = SOE:getBaseClass():new({})
 local o3 = SOE:getBaseClass():new({})
+local o4 = SOE:getBaseClass():new({})
+local o5 = SOE:getBaseClass():new({})
 o1:tag("tag1,tag2")
 o2:tag("tag2,tag3")
-o2:name("fred")
-print(o2,SOE.e.fred,o2:isAlive())
-o2:detag("tag3")
-o2:delete()
-print(o2,SOE.e.fred,o2:isAlive())
-
-for k,v in pairs(SOE.tagIndexCount) do print(k,v,SOE:tableSize(SOE.tagLists[k])) end
+o3:tag("tag3")
+o4:tag("tag1,tag2,tag3")
+o5:tag("tag2")
+local qr = SOE:query({"tag2","tag3"})
+print(o2,o4)
+if qr ~= nil then for k,v in pairs(qr) do print(k,"=",v) end else print("None") end
 SOE:deleteAll()
+
+require("bully")
