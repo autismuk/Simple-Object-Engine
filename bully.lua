@@ -9,7 +9,7 @@
 --- ************************************************************************************************************************************************************************
 
 
-local testCount = 100*5000
+local testCount = 100
 local tagCount = 50
 local tagName = {}
 local objCount = 100
@@ -94,6 +94,6 @@ for i = 1,testCount do
 		assert(countItems(result) == matches) 																-- check set size.
 	end
 end
-SOE:deleteAll()
+--SOE:deleteAll()
 print("Done.")
 

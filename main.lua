@@ -19,7 +19,7 @@ local SOEBaseObject
 
 local SOE = Base:new()
 
-SOE.decorationList = { "delete","tag","detag","name","isAlive","process"} 					--  methods that decorate objects.
+SOE.decorationList = { "delete","tag","detag","name","isAlive","process","fireMethod"} 		--  methods that decorate objects.
 
 --//	SOE Constructor
 
@@ -200,7 +200,6 @@ SOEBaseObject = Base:new()
 --//	@data 	[table]					Object data for the game object. If nil, it is being used to prototype.
 
 function SOEBaseObject:initialise(data)
-	print("Data",data)
 	if data == nil then return end 															-- being used to create a new object, not an actual new object.
 	self.__SOE = SOE 																		-- set an SOE reference for general use
 	self.__SOE:attach(self) 																-- attach the object and decorate it
@@ -271,15 +270,33 @@ end
 --//	Call a named class method on all the entities in the entity list.
 --//	@methodName 	[string] 		name of method to call
 --//	@entities 		[table]			table of ref=>ref
+--//	@return 		[boolean]		true if successfully called. Failures will log errors.
 
 function SOEBaseObject:process(methodName,entities,...)
+	local ok = true
 	if entities == nil then return end 														-- nothing in the list, then return.
 	for _,ref in pairs(entities) do 														-- work through all the entities
-		if ref:isAlive() then 																-- if the entity is still alive
-			assert(ref[methodName] ~= nil,"method not defined ".. methodName) 				-- it is a requirement.
-			ref[methodName](ref,...) 														-- call the appropriate method
-		end 
+		ok = ok and self:fireMethod(ref,methodName,...)
 	end
+	return ok
+end 
+
+--//	Call the given method (by name) on the given reference.
+--//	@ref 			[object]		object reference
+--//	@methodName 	[string] 		name of method to call
+--//	@return 		[boolean]		true if successfully called. Failures will log errors.
+
+function SOEBaseObject:fireMethod(ref,methodName,...)
+	local ok = true
+	if ref:isAlive() then 																	-- if the entity is still alive
+		if ref[methodName] == nil then 														-- don't have that tag
+			ok = false 																		-- so send a warning.
+			print("Warning : object does not have "..methodName.."()")
+		else
+			ref[methodName](ref,...) 														-- call the appropriate method
+		end
+	end 
+	return ok
 end 
 
 _G.SOE = SOE
@@ -291,10 +308,12 @@ _G.SOE = SOE
 --- ************************************************************************************************************************************************************************
 
 --- ************************************************************************************************************************************************************************
---												Update Tag, does frame based updates on anything tagged with the update tag.
+--//	Update Object, does frame based updates on anything tagged with the update tag. Anything tagged wth 'update' has its onUpdate() method called every frame.
 --- ************************************************************************************************************************************************************************
 
 local UpdateObject = SOEBaseObject:new() 													-- create a subclass
+
+--//	Constructor
 
 function UpdateObject:constructor()
 	-- print("Construct update")
@@ -302,31 +321,146 @@ function UpdateObject:constructor()
 	Runtime:addEventListener("enterFrame",self) 											-- add RTEL
 end 
 
+--// 	Destructor
+
 function UpdateObject:destructor()
 	-- print("Destruct update")
 	Runtime:removeEventListener("enterFrame",self) 											-- remove RTEL
 end 
 
+--//	Update enterFrame handler. Works out the dt value in both seconds and milliseconds, and dispatches to all 
+--//	update tagged objects.
+
 function UpdateObject:enterFrame()
 	local currentTime = system.getTimer() 													-- get now
 	local deltaMillisecs = math.min(100,currentTime-self.lastTick) 							-- get dt in milliseconds
 	self.lastTick = currentTime  															-- update last tick.
-	self:process("update",self:query({"update"}),deltaMillisecs/1000,deltaMillisecs) 		-- and pass it to all matching objects
+	local ok=self:process("onUpdate",self:query("update"),deltaMillisecs/1000,deltaMillisecs) 		-- and pass it to all matching objects
+	if not ok then self:delete() end
 end 
 
 UpdateObject:new({}) 																		-- create an object which is added automatically.
+UpdateObject.new = nil 																		-- singleton
+
+--- ************************************************************************************************************************************************************************
+-- 		Timer Object, provides multiple timers. Only one instance is required per scene, as it can handle multiple events. 
+--- ************************************************************************************************************************************************************************
+
+local TimerObject = SOEBaseObject:new() 													-- create a subclass
+
+--//	Constructor
+
+function TimerObject:constructor() 
+	self.timerEvents = {} 																	-- list of timer events. { ref = fireTime = , delay = , isRepeat = , target = }
+	self:tag("update")	 																	-- tagged for update
+	self:name("timer") 																		-- accessible via SOE.e.timer
+	self.nextFreeID = 1000 																	-- next free timer ID.
+end 
+
+--//%	General addEvent method. Adds a method to be fired at a point in the future
+--//	@timerID 	[number]		Timer ID to use, if not provided will use the next one.
+--//	@target 	[object]		Object which should have an onTimer() handler
+--//	@delay 		[number]		Timer time in ms
+--//	@repeatCount [number]		Number of repeats, 1 upwards. -1 will run until cancelled.
+--//	@return 	[number]		Internal ID of timer
+
+function TimerObject:_addEvent(timerID,target,delay,repeatCount)
+	if timerID == nil then 																	-- if no ID given, create one.
+		timerID = self.nextFreeID
+		self.nextFreeID = self.nextFreeID + 1
+	end
+	repeatCount = repeatCount or 1 	 		 												-- repeat count defaults to 1.
+	local newEvent = { ref = timerID, fireTime = system.getTimer()+delay, delay = delay, 	-- create a new event record.
+															count = repeatCount, target = target}															
+	self.timerEvents[#self.timerEvents+1] = newEvent 										-- add to the list.
+	table.sort(self.timerEvents,function(a,b) return a.fireTime < b.fireTime end) 			-- sort it so the next one is first on the list.
+	return timerID
+end 
+
+--//	Fire the timer event once.
+--//	@target 	[object]		Object which should have an onTimer() handler
+--//	@delay 		[number]		Timer time in ms
+--//	@return 	[number]		Internal ID of timer
+
+function TimerObject:addOneEvent(target,delay)
+	return self:_addEvent(nil,target,delay,1)
+end 
+
+--//	Fire the timer event a specific number of times.
+--//	@target 	[object]		Object which should have an onTimer() handler
+--//	@delay 		[number]		Timer time in ms
+--//	@repeatCount [number]		Number of repeats, 1 upwards. -1 will run until cancelled.
+--//	@return 	[number]		Internal ID of timer
+
+function TimerObject:addMultipleEvent(target,delay,repeatCount)
+	return self:_addEvent(nil,target,delay,repeatCount)
+end 
+
+--//	Fire the timer event at regular intervals until cancelled.
+--//	@target 	[object]		Object which should have an onTimer() handler
+--//	@delay 		[number]		Timer time in ms
+--//	@return 	[number]		Internal ID of timer
+
+function TimerObject:addRepeatingEvent(target,delay)
+	return self:_addEvent(nil,target,delay,-1)
+end 
+
+
+--//	Remove a current event
+--//	@timerID 	[number]		Event you want to remove.
+
+function TimerObject:removeEvent(timerID)
+	local i = 1 																			-- work through the timer events
+	while i <= #self.timerEvents do  														-- scan them
+		if self.timerEvents[i].ref == timerID then  										-- if IDs match then remove
+			table.remove(self.timerEvents,i)
+		else  																				-- otherwise go on to the next one.
+			i = i + 1
+		end 
+	end
+end 
+
+--//	Destructor
+
+function TimerObject:destructor()
+	timerEvents = {}
+end 
+
+--//	Called on update (e.g. enterFrame)
+--//	@dt 	[number] 	delta time in seconds
+--//	@dms 	[number] 	delta time in milliseconds
+
+function TimerObject:onUpdate(dt,dms)
+	if #self.timerEvents == 0 then return end 												-- if no timer events, do nothing.
+	local currentTime = system.getTimer() 													-- get elapsed time in milliseconds.
+	if currentTime < self.timerEvents[1].fireTime then return end 							-- not time to fire yet
+	local event = self.timerEvents[1] 														-- grab the event.
+	table.remove(self.timerEvents,1) 														-- remove it from the array.
+	if event.count > 0 then event.count = event.count - 1 end 								-- decrement repeeat count if > 0
+	if event.count ~= 0 then 																-- is it a repeatable event ?
+		self:_addEvent(event.ref,event.target,event.delay,event.count)						-- set it to fire again
+	end 
+	self:fireMethod(event.target,"onTimer",event.ref) 										-- fire the onTimer() method.
+end 
+
+TimerObject:new({}) 																		-- create a new empty timer object.
+TimerObject.new = nil 																		-- one instance only.
+
+--- ********************************T****************************************************************************************************************************************
+--- ************************************************************************************************************************************************************************
+
 
 -- TODO: Messaging System
 -- TODO: Event Systen
+-- TODO: State Machine ?
 
 print("Creating o1")
 local o1 = SOE.getBaseClass():new({})
 local o2 = SOE.getBaseClass():new({})
-print(o1,o2)
-function o1:update(dt1,dt2) print(self,dt1,dt2) end
-function o2:update(dt1,dt2) print(self,dt1,dt2) end
-o1:tag("update")
-o2:tag("update")
+SOE.e.timer:addMultipleEvent(o1,2000,3)
+local rTimer = SOE.e.timer:addRepeatingEvent(o2,500,-1)
+function o1:onTimer(id) print("*** clock ***",id) SOE.e.timer:removeEvent(rTimer) end
+function o2:onTimer(id) print("long",id) end
 --SOE:deleteAll()
 
---require("bully")
+require("bully")
