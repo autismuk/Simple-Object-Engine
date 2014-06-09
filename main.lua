@@ -19,7 +19,7 @@ local SOEBaseObject
 
 local SOE = Base:new()
 
-SOE.decorationList = { "delete","tag","detag","name","isAlive"} 							--  methods that decorate objects.
+SOE.decorationList = { "delete","tag","detag","name","isAlive","process"} 					--  methods that decorate objects.
 
 --//	SOE Constructor
 
@@ -200,6 +200,7 @@ SOEBaseObject = Base:new()
 --//	@data 	[table]					Object data for the game object. If nil, it is being used to prototype.
 
 function SOEBaseObject:initialise(data)
+	print("Data",data)
 	if data == nil then return end 															-- being used to create a new object, not an actual new object.
 	self.__SOE = SOE 																		-- set an SOE reference for general use
 	self.__SOE:attach(self) 																-- attach the object and decorate it
@@ -267,30 +268,65 @@ function SOEBaseObject:name(name)
 	self.__SOE:nameObject(name:lower():gsub("%s",""),self) 									-- name the object
 end 
 
+--//	Call a named class method on all the entities in the entity list.
+--//	@methodName 	[string] 		name of method to call
+--//	@entities 		[table]			table of ref=>ref
+
+function SOEBaseObject:process(methodName,entities,...)
+	if entities == nil then return end 														-- nothing in the list, then return.
+	for _,ref in pairs(entities) do 														-- work through all the entities
+		if ref:isAlive() then 																-- if the entity is still alive
+			assert(ref[methodName] ~= nil,"method not defined ".. methodName) 				-- it is a requirement.
+			ref[methodName](ref,...) 														-- call the appropriate method
+		end 
+	end
+end 
+
 _G.SOE = SOE
 
 --- ************************************************************************************************************************************************************************
+--
+--																			C O M P O N E N T S
+--
 --- ************************************************************************************************************************************************************************
 
--- TODO: Query executor given method/function parameter.
--- TODO: Frame updater
+--- ************************************************************************************************************************************************************************
+--												Update Tag, does frame based updates on anything tagged with the update tag.
+--- ************************************************************************************************************************************************************************
+
+local UpdateObject = SOEBaseObject:new() 													-- create a subclass
+
+function UpdateObject:constructor()
+	-- print("Construct update")
+	self.lastTick = 0 																		-- clear last tick
+	Runtime:addEventListener("enterFrame",self) 											-- add RTEL
+end 
+
+function UpdateObject:destructor()
+	-- print("Destruct update")
+	Runtime:removeEventListener("enterFrame",self) 											-- remove RTEL
+end 
+
+function UpdateObject:enterFrame()
+	local currentTime = system.getTimer() 													-- get now
+	local deltaMillisecs = math.min(100,currentTime-self.lastTick) 							-- get dt in milliseconds
+	self.lastTick = currentTime  															-- update last tick.
+	self:process("update",self:query({"update"}),deltaMillisecs/1000,deltaMillisecs) 		-- and pass it to all matching objects
+end 
+
+UpdateObject:new({}) 																		-- create an object which is added automatically.
+
 -- TODO: Messaging System
 -- TODO: Event Systen
 
-print("Start")
-local o1 = SOE:getBaseClass():new({})
-local o2 = SOE:getBaseClass():new({})
-local o3 = SOE:getBaseClass():new({})
-local o4 = SOE:getBaseClass():new({})
-local o5 = SOE:getBaseClass():new({})
-o1:tag("tag1,tag2")
-o2:tag("tag2,tag3")
-o3:tag("tag3")
-o4:tag("tag1,tag2,tag3")
-o5:tag("tag2")
-local qr = SOE:query({"tag2","tag3"})
-print(o2,o4)
-if qr ~= nil then for k,v in pairs(qr) do print(k,"=",v) end else print("None") end
-SOE:deleteAll()
+print("Creating o1")
+local o1 = SOE.getBaseClass():new({})
+local o2 = SOE.getBaseClass():new({})
+print(o1,o2)
+function o1:update(dt1,dt2) print(self,dt1,dt2) end
+function o2:update(dt1,dt2) print(self,dt1,dt2) end
+o1:tag("update")
+o2:tag("update")
+--SOE:deleteAll()
 
-require("bully")
+--require("bully")
