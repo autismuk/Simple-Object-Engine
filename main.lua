@@ -357,7 +357,7 @@ function TimerObject:constructor()
 	self.nextFreeID = 1000 																	-- next free timer ID.
 end 
 
---//%	General addEvent method. Adds a method to be fired at a point in the future
+--//%	General addEvent method. Adds a method to be fired at a point in the future. Use the other functions which encapsulate this.
 --//	@timerID 	[number]		Timer ID to use, if not provided will use the next one.
 --//	@target 	[object]		Object which should have an onTimer() handler
 --//	@delay 		[number]		Timer time in ms
@@ -446,21 +446,22 @@ end
 TimerObject:new({}) 																		-- create a new empty timer object.
 TimerObject.new = nil 																		-- one instance only.
 
---- ********************************T****************************************************************************************************************************************
+--- ************************************************************************************************************************************************************************
+--//
 --- ************************************************************************************************************************************************************************
 
 
 -- TODO: Messaging System
--- TODO: Event Systen
 -- TODO: State Machine ?
 
 print("Creating o1")
 local o1 = SOE.getBaseClass():new({})
 local o2 = SOE.getBaseClass():new({})
-SOE.e.timer:addMultipleEvent(o1,2000,3)
 local rTimer = SOE.e.timer:addRepeatingEvent(o2,500,-1)
-function o1:onTimer(id) print("*** clock ***",id) SOE.e.timer:removeEvent(rTimer) end
-function o2:onTimer(id) print("long",id) end
+function o2:onTimer(id) print(SOE.e.controller:getX(),SOE.e.controller:getY()) end
 --SOE:deleteAll()
 
-require("bully")
+--require("bully")
+
+local o3 = require("controller")
+print(o3:new({}))

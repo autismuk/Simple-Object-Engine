@@ -94,6 +94,6 @@ for i = 1,testCount do
 		assert(countItems(result) == matches) 																-- check set size.
 	end
 end
---SOE:deleteAll()
+SOE:deleteAll()
 print("Done.")
 
