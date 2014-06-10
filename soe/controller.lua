@@ -24,7 +24,7 @@ function Controller:constructor(info)
 	local y = info.y 
 	local r = info.r
 	if x == nil then 														-- if no prarameters supplied put in bottom right
-		r = display.contentWidth / 5
+		r = math.min(display.contentWidth,display.contentHeight) / 5
 		x = display.contentWidth - 10 - r
 		y = display.contentHeight - 10 - r
 	end
