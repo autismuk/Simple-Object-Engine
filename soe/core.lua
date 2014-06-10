@@ -55,7 +55,6 @@ local TimerObject = SOE.getBaseClass():new() 												-- create a subclass
 function TimerObject:constructor() 
 	self.timerEvents = {} 																	-- list of timer events. { ref = fireTime = , delay = , isRepeat = , target = }
 	self:tag("update")	 																	-- tagged for update
-	self:name("timer") 																		-- accessible via SOE.e.timer
 	self.nextFreeID = 1000 																	-- next free timer ID.
 end 
 
@@ -149,8 +148,26 @@ function TimerObject:onUpdate(dt,dms)
 	self:fireMethod(event.target,"onTimer",event.ref,event.tag) 							-- fire the onTimer(referenceID,tag) method.
 end 
 
-TimerObject:new({}) 																		-- create a new empty timer object.
+local timerInstance = TimerObject:new({}) 													-- create a new empty timer object.
 TimerObject.new = nil 																		-- one instance only.
+
+-- create timer methods 
+
+SOE:getBaseClass().addOneEvent = function(self,target,delay,tag)
+	return timerInstance:addOneEvent(target,delay,tag)
+end 
+
+SOE:getBaseClass().addRepeatingEvent = function(self,target,delay,tag)
+	return timerInstance:addRepeatingEvent(target,delay,tag)
+end 
+
+SOE:getBaseClass().addMultipleEvent = function(self,target,delay,repeatCount,tag)
+	return timerInstance:addMultipleEvent(target,delay,repeatCount,tag)
+end 
+
+SOE:getBaseClass().removeEvent = function(self,timerID)
+	timerInstance:removeEvent(timerID)
+end 
 
 --- ************************************************************************************************************************************************************************
 --//	Inter object messaging system. Messages can take any form you like, they are stored as variable arguments. The first element is either a string (representing a 
@@ -207,7 +224,6 @@ SOE.getBaseClass().sendMessageDelayed = function (self,tags,delay,...)
 end
 
 -- TODO: Send Message to specific object.
--- TODO: Put timer into SOEBaseClass
 -- TODO: Fix up attach/detach/mixin code so it is better.
 -- TODO: More Asserts - comments
 -- TODO: State Machine ? Attached to Scenes ?

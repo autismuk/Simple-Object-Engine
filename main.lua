@@ -76,8 +76,8 @@ function Ball:onUpdate(dTime,dMilliTime)
 	if self.ball.x < 0 then 
 		-- SOE:deleteAll()
 		self.dx = 1
+		self:delete()
 	end
-	--SOE.e.post:send("obstacle",self)
 	self:sendMessage("obstacle",42)
 end 
 
@@ -85,7 +85,10 @@ Bat:new({ x = 32 })
 Bat:new({ x = display.contentWidth/3 })
 Ball:new({})
 Ball:new({})
-local i = Ball:new({})
+Ball:new({})
 
-i:sendMessageDelayed("balls",1000)
+SOE:getBaseClass():sendMessageDelayed("balls",1000)
 
+--local o1 = SOE:getBaseClass():new({})
+--local c1 = SOE:getBaseClass():addRepeatingEvent(o1,300,"test")
+--function o1:onTimer(ref,tag) print(ref,tag,c1) end
