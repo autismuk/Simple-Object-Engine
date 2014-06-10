@@ -1,7 +1,8 @@
 --- ************************************************************************************************************************************************************************
 ---
 ---				Name : 		controller.lua
----				Purpose :	Controller (4 way) object
+---				Purpose :	Controller (4 way) object adapter for SOE
+
 ---				Created:	27 May 2014
 ---				Author:		Paul Robson (paul@robsons.org.uk)
 ---				License:	MIT
