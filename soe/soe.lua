@@ -1,3 +1,13 @@
+--- ************************************************************************************************************************************************************************
+---
+---				Name : 		soe.lua
+---				Purpose :	SOE (Simple Object Engine)
+---				Created:	7th June 2014
+---				Author:		Paul Robson (paul@robsons.org.uk)
+---				License:	MIT
+---
+--- ************************************************************************************************************************************************************************
+
 -- Standard OOP (with Constructor parameters added.)
 _G.Base =  _G.Base or { new = function(s,...) local o = { } setmetatable(o,s) s.__index = s o:initialise(...) return o end, initialise = function() end }
 

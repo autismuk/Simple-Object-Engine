@@ -31,3 +31,17 @@ print(#fred)
 --SOE:deleteAll()
 
 print(SOE.e.msg:send("tag1",44,66))
+
+-- o1:tag("update")
+function o1:onUpdate(dt,dms) print(SOE.e.controller:getX(),SOE.e.controller:getY()) end 
+function o1:onTimer(dt,dms) print(SOE.e.controller:getX(),SOE.e.controller:getY()) end 
+
+SOE.e.timer:addRepeatingEvent(o1,500)
+
+-- TODO: Timer as local Mixin ?
+-- TODO: More Asserts
+-- TODO: Complete Messaging System (dispatch - transfer, clear, then send to stop loops)
+-- TODO: State Machine ? Attached to Scenes ?
+-- TODO: Pong
+-- TODO: Flappy Circle
+-- TODO: Add buttons to controller.

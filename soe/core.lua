@@ -181,7 +181,10 @@ end
 MessageObject:new({})
 MessageObject.new = nil
 
--- TODO: Messaging System
--- TODO: State Machine ?
+-- TODO: Complete & Test Messaging System
+-- TODO: State Machine ? Attached to Scenes ?
+-- TODO: Lockable / Delete all matching ?
+-- TODO: Pong
+-- TODO: Flappy Circle
 -- TODO: Add buttons to controller.
 
