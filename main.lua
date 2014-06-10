@@ -51,12 +51,17 @@ function Ball:constructor()
 	self.ball:setFillColor(0,1,1)
 	self.ball.x = display.contentWidth / 2
 	self.ball.y = math.random(self.radius,display.contentHeight-self.radius)
-	self.speed = 5
-	self:tag("update")
+	self.speed = 8
+	self:tag("balls")
+	--self:tag("update")
 end 
 
 function Ball:destructor()
 	self.ball:removeSelf() 
+end 
+
+function Ball:onMessage(message)
+	self:tag("update")
 end 
 
 function Ball:onUpdate(dTime,dMilliTime)
@@ -72,11 +77,15 @@ function Ball:onUpdate(dTime,dMilliTime)
 		-- SOE:deleteAll()
 		self.dx = 1
 	end
-	SOE.e.post:send("obstacle",self)
+	--SOE.e.post:send("obstacle",self)
+	self:sendMessage("obstacle",42)
 end 
 
 Bat:new({ x = 32 })
 Bat:new({ x = display.contentWidth/3 })
 Ball:new({})
 Ball:new({})
-Ball:new({})
+local i = Ball:new({})
+
+i:sendMessageDelayed("balls",1000)
+

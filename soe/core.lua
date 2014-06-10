@@ -163,19 +163,18 @@ local MessageObject = SOE:getBaseClass():new() 												-- messaging object p
 function MessageObject:constructor(init)
 	self.currentMessages = {} 																-- array of current messages.
 	self:tag("update") 																		-- this is updated on the frame 
-	self:name("post") 																		-- accessible through SOE.e.post
 end 
 
 function MessageObject:destructor()
 	self.currentMessages = nil 	 															-- lose reference
 end
 
-function MessageObject:send(tags,sender,...)
-	self:sendDelayed(tags,sender,0,...)
+function MessageObject:sendMessage(tags,sender,...)
+	self:sendMessageDelayed(tags,sender,0,...)
 end 
 
-function MessageObject:sendDelayed(tags,sender,delay,...)
-	if delay > 0 then delay = delay + system.gettimer() end 								-- messages can be sent with a delay in.
+function MessageObject:sendMessageDelayed(tags,sender,delay,...)
+	if delay > 0 then delay = delay + system.getTimer() end 								-- messages can be sent with a delay in.
 	local newMessage = { recipient = tags, delay = delay, contents = arg, sender = sender} 	-- construct a new message list.
 	self.currentMessages[#self.currentMessages+1] = newMessage 								-- add message to  internal list.
 end 
@@ -194,11 +193,24 @@ function MessageObject:onUpdate()
 	sendList = nil 
 end
 
-MessageObject:new({})
+local messageInstance = MessageObject:new({})
 MessageObject.new = nil
 
--- TODO: More Asserts
+--	Create sendMessage(tags,...) and sendMessageDelayed(tags,delay,...) Base Class methods.
+
+SOE.getBaseClass().sendMessage = function (self,tags,...) 
+	messageInstance:sendMessage(tags,self,...) 
+end
+
+SOE.getBaseClass().sendMessageDelayed = function (self,tags,delay,...) 
+	messageInstance:sendMessageDelayed(tags,self,delay,...) 
+end
+
+-- TODO: Send Message to specific object.
+-- TODO: Put timer into SOEBaseClass
+-- TODO: Fix up attach/detach/mixin code so it is better.
+-- TODO: More Asserts - comments
 -- TODO: State Machine ? Attached to Scenes ?
--- TODO: Pong
+-- TODO: Pong - fix angle - fix game end - add score with mixin - comment
 -- TODO: Flappy Circle
 -- TODO: Add buttons to controller.

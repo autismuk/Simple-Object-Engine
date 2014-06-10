@@ -41,7 +41,9 @@ end
 --//	Delete all Game Objects, also checks counters are zero and tag index lists are empty.
 
 function SOE:deleteAll() 
-	for _,obj in pairs(self.objects) do obj:delete() end 									-- delete every object in the system.
+	for _,obj in pairs(self.objects) do  													-- delete every object in the system.
+		if obj:isAlive() then obj:delete() end 				
+	end
 	assert(self.objectCount == 0) assert(self:tableSize(self.e) == 0) 						-- check everything tidied up correctly.
 	assert(self:tableSize(self.objects) == 0)
 	for name,_ in pairs(self.tagLists) do 													-- check the tag indexes are clear.
