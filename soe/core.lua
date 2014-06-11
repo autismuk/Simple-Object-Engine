@@ -82,34 +82,33 @@ end
 --//	Fire the timer event once.
 --//	@target 	[object]		Object which should have an onTimer() handler
 --//	@delay 		[number]		Timer time in ms
---//	@tag 		[string]		optional identifying tag
+--//	@marker 	[string]		optional identifying marker
 --//	@return 	[number]		Internal ID of timer
 
-function TimerObject:addOneEvent(target,delay,tag)
-	return self:_addEvent(nil,target,delay,1,tag)
+function TimerObject:addOneEvent(target,delay,marker)
+	return self:_addEvent(nil,target,delay,1,marker)
 end 
 
 --//	Fire the timer event a specific number of times.
 --//	@target 	[object]		Object which should have an onTimer() handler
 --//	@delay 		[number]		Timer time in ms
 --//	@repeatCount [number]		Number of repeats, 1 upwards. -1 will run until cancelled.
---//	@tag 		[string]		optional identifying tag
+--//	@marker 	[string]		optional identifying marker
 --//	@return 	[number]		Internal ID of timer
 
-function TimerObject:addMultipleEvent(target,delay,repeatCount,tag)
-	return self:_addEvent(nil,target,delay,repeatCount,tag)
+function TimerObject:addMultipleEvent(target,delay,repeatCount,marker)
+	return self:_addEvent(nil,target,delay,repeatCount,marker)
 end 
 
 --//	Fire the timer event at regular intervals until cancelled.
 --//	@target 	[object]		Object which should have an onTimer() handler
 --//	@delay 		[number]		Timer time in ms
---//	@tag 		[string]		optional identifying tag
+--//	@marker 	[string]		optional identifying marker
 --//	@return 	[number]		Internal ID of timer
 
-function TimerObject:addRepeatingEvent(target,delay,tag)
-	return self:_addEvent(nil,target,delay,-1,tag)
+function TimerObject:addRepeatingEvent(target,delay,marker)
+	return self:_addEvent(nil,target,delay,-1,marker)
 end 
-
 
 --//	Remove a current event
 --//	@timerID 	[number]		Event you want to remove.
@@ -177,24 +176,41 @@ end
 
 local MessageObject = SOE:getBaseClass():new() 												-- messaging object prototype.
 
+--//	Constructor
+
 function MessageObject:constructor(init)
 	self.currentMessages = {} 																-- array of current messages.
 	self:tag("update") 																		-- this is updated on the frame 
 end 
 
+--// 	Destructor
+
 function MessageObject:destructor()
 	self.currentMessages = nil 	 															-- lose reference
 end
 
-function MessageObject:sendMessage(tags,sender,...)
-	self:sendMessageDelayed(tags,sender,0,...)
+--//	Send Message now. Note that this doesn't mean now-now, it means, the next time the message object is updated. Messages should not be used
+--//	synchronously !
+--//	@recipients 	[table/string]			Either an object reference, or a list of tags who will receive this.
+--//	@sender 		[table]					Which object sent it.
+
+function MessageObject:sendMessage(recipients,sender,...)
+	self:sendMessageDelayed(recipients,sender,0,...)
 end 
 
-function MessageObject:sendMessageDelayed(tags,sender,delay,...)
+--//	Send message in the future - will be sent after a specified timer period has elapsed.
+--//	@recipients 	[table/string]			Either an object reference, or a list of tags who will receive this.
+--//	@sender 		[table]					Which object sent it.
+--//	@delay 			[number] 				Number of milliseconds to elapse before it is dispatched.
+
+function MessageObject:sendMessageDelayed(recipients,sender,delay,...)
 	if delay > 0 then delay = delay + system.getTimer() end 								-- messages can be sent with a delay in.
-	local newMessage = { recipient = tags, delay = delay, contents = arg, sender = sender} 	-- construct a new message list.
+	local newMessage = { recipient = recipients, delay = delay, contents = arg, sender = sender} 	-- construct a new message list.
 	self.currentMessages[#self.currentMessages+1] = newMessage 								-- add message to  internal list.
 end 
+
+--//	Called on frame update. Dispatches all messages in the queue, if due, and those that aren't due to be sent yet are
+--//	pushed back into the queue.
 
 function MessageObject:onUpdate()
 	local sendList = self.currentMessages 													-- get the current messages
@@ -202,7 +218,13 @@ function MessageObject:onUpdate()
 	local sysTime = system.getTimer() 														-- get the system timer.
 	for _,msg in ipairs(sendList) do 														-- work through the current list
 		if sysTime > msg.delay then  														-- is it past the message time ?
-			self:process("onMessage",self:query(msg.recipient),msg) 						-- if so, send it to all satisfying the requirements.
+			local recipients
+			if type(msg.recipient) == "string" then 										-- if string (e.g. query)
+				recipients = self:query(msg.recipient) 										-- evaluate query
+			else 
+				recipients = { } recipients[msg.recipient] = msg.recipient 					-- else send it directly to the object
+			end
+			self:process("onMessage",recipients,msg)				 						-- if so, send it to all satisfying the requirements.
 		else 
 			self.currentMessages[#self.currentMessages+1] = msg  							-- otherwise put it back for next time.
 		end 
@@ -210,23 +232,15 @@ function MessageObject:onUpdate()
 	sendList = nil 
 end
 
-local messageInstance = MessageObject:new({})
+local messageInstance = MessageObject:new({}) 												-- create a singleton instance.
 MessageObject.new = nil
 
---	Create sendMessage(tags,...) and sendMessageDelayed(tags,delay,...) Base Class methods.
+--	Create sendMessage(recipients,...) and sendMessageDelayed(recipients,delay,...) Base Class methods.
 
-SOE.getBaseClass().sendMessage = function (self,tags,...) 
-	messageInstance:sendMessage(tags,self,...) 
+SOE.getBaseClass().sendMessage = function (self,recipients,...) 
+	messageInstance:sendMessage(recipients,self,...) 
 end
 
-SOE.getBaseClass().sendMessageDelayed = function (self,tags,delay,...) 
-	messageInstance:sendMessageDelayed(tags,self,delay,...) 
+SOE.getBaseClass().sendMessageDelayed = function (self,recipients,delay,...) 
+	messageInstance:sendMessageDelayed(recipients,self,delay,...) 
 end
-
--- TODO: Send Message to specific object.
--- TODO: Fix up attach/detach/mixin code so it is better.
--- TODO: More Asserts - comments
--- TODO: State Machine ? Attached to Scenes ?
--- TODO: Pong - fix angle - fix game end - add score with mixin - comment
--- TODO: Flappy Circle
--- TODO: Add buttons to controller.

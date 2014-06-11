@@ -19,8 +19,6 @@ local SOEBaseObject
 
 local SOE = Base:new()
 
-SOE.decorationList = { "delete","tag","detag","name","isAlive","process","fireMethod"} 		--  methods that decorate objects.
-
 --//	SOE Constructor
 
 function SOE:initialise()
@@ -67,16 +65,20 @@ function SOE:getBaseClass()
 	return SOEBaseObject 
 end 
 
-SOE.decorationList = { "delete","tag","detag","name","isAlive"}
-
 --//	Attach an object to the system. It is added to the indices and decorated with the needed default functions, currently tag, detag, name and delete.
 --//	@object 	[object]		Object to attach to SOE
 
 function SOE:attach(object)
 	assert(object ~= nil and self.objects[object] == nil,"Bad Game Object Attached") 		-- check parameter is present and not already in objects list.
+	assert(type(object) == "table")
 	self.objects[object] = object 															-- add to object list.
 	self.objectCount = self.objectCount + 1 												-- increment the object counter.
-	for _,name in ipairs(SOE.decorationList) do self[name] = SOEBaseObject[name] end  		-- add functions from decoration list
+	for name,value in pairs(SOEBaseObject) do 
+		if type(value) == "function" and name ~= "new" and name ~= "initialise" and  		-- decorate the object with any functions in the base object that
+			name ~= "constructor" and name ~= "destructor" then  							-- aren't the standard ones.
+				object[name] = object[name] or value
+		end 
+	end
 end 
 
 --//	Detach an object from the system. It removes its reference, any usage in SOE.e and removes itself from the tag lists
@@ -84,6 +86,7 @@ end
 
 function SOE:detach(object)
 	assert(object ~= nil and self.objects[object] ~= nil,"Cannot remove Game Object") 		-- check parameter present and object actually exists.
+	assert(type(object) == "table")
 	self.objects[object] = nil  															-- remove from object list
 	self.objectCount = self.objectCount - 1 												-- decrement object count.
 	for name,ref in pairs(self.e) do 														-- remove reference from self.e
@@ -95,7 +98,6 @@ function SOE:detach(object)
 			self.tagIndexCount[name] = self.tagIndexCount[name] - 1 						-- decrement the tag list index count
 		end 
 	end
-	for _,name in ipairs(SOE.decorationList) do self[name] = nil end  						-- remove functions from decoration list
 end 
 
 --//%	Add a tag to a specific object. Objects should add tags to themselves using the tag() method.
@@ -168,6 +170,7 @@ function SOE:query(tagList)
 		if self.objectCount > 0 then return self.objects else return nil end 				-- return the object list or nil
 	end 
 	if #tagList == 1 then 																	-- if one item.
+		if self.tagIndexCount[tagList[1]] == 0 then return nil end 							-- return nil if empty list.
 		return self.tagLists[tagList[1]] 													-- then return the taglist for that tag (the first and only one)
 	end
 	for i = 1,#tagList do 																	-- check that all the tags have at least one value, otherwise
@@ -203,7 +206,9 @@ SOEBaseObject = Base:new()
 
 function SOEBaseObject:initialise(data)
 	if data == nil then return end 															-- being used to create a new object, not an actual new object.
+	assert(type(data) == "table")
 	self.__SOE = SOE 																		-- set an SOE reference for general use
+	self.__isAlive = true 																	-- mark as alive.
 	self.__SOE:attach(self) 																-- attach the object and decorate it
 	self:constructor(data) 																	-- call its SOE constructor 
 end 
@@ -226,7 +231,7 @@ end
 function SOEBaseObject:delete()
 	self:destructor() 																		-- call destructor.
 	self.__SOE:detach(self) 																-- detach the object.
-	self.__SOE = nil 																		-- removing this reference means the object is dead.
+	self.__isAlive = nil 																	-- removing this reference means the object is dead.
 end 
 
 --//	Check to see if object has not been destroyed. This needs to be done when processing tag lists, unless you know for an absolute fact that 
@@ -234,7 +239,7 @@ end
 --//	@return 	[boolean]			true if alive.
 
 function SOEBaseObject:isAlive()
-	return self.__SOE ~= nil 
+	return self.__isAlive == true 															-- safety.
 end 
 
 --//	Add tag or tags to a game object
@@ -242,6 +247,7 @@ end
 --//	@return 	[object] 			chainable
 
 function SOEBaseObject:tag(tagList) 		
+	assert(tagList ~= nil and type(tagList) == "string")									-- validate parameters
 	tagList = self.__SOE:createTagList(tagList) 											-- convert to a list of tags.
 	for _,tag in ipairs(tagList) do self.__SOE:addTag(tag,self) end 						-- add all the tags.
 	return self
@@ -252,6 +258,7 @@ end
 --//	@return 	[object] 			chainable
 
 function SOEBaseObject:detag(tagList)
+	assert(tagList ~= nil and type(tagList) == "string")									-- validate parameters
 	tagList = self.__SOE:createTagList(tagList) 											-- convert to a list of tags.
 	for _,tag in ipairs(tagList) do self.__SOE:removeTag(tag,self) end 						-- remove all the tags.
 	return self
@@ -271,6 +278,7 @@ end
 --//	@return 	[object] 			chainable
 
 function SOEBaseObject:name(name)
+	assert(name ~= nil and name ~= "" and type(name) == "string")							-- validate paremeter.
 	self.__SOE:nameObject(name:lower():gsub("%s",""),self) 									-- name the object
 	return self
 end 
@@ -281,10 +289,11 @@ end
 --//	@return 		[boolean]		true if successfully called. Failures will log errors.
 
 function SOEBaseObject:process(methodName,entities,...)
-	local ok = true
+	assert(methodName ~= nil and entities ~= nil and type(methodName) == "string" and type(entities) == "table")
+	local ok = true 																		-- successful if all entities fire ok.
 	if entities == nil then return end 														-- nothing in the list, then return.
 	for _,ref in pairs(entities) do 														-- work through all the entities
-		ok = ok and self:fireMethod(ref,methodName,...)
+		ok = ok and self:fireMethod(ref,methodName,...) 									-- run the method
 	end
 	return ok
 end 
@@ -295,6 +304,7 @@ end
 --//	@return 		[boolean]		true if successfully called. Failures will log errors.
 
 function SOEBaseObject:fireMethod(ref,methodName,...)
+	assert(ref ~= nil and methodName ~= nil and type(ref) == "table" and type(methodName) == "string")
 	local ok = true
 	if ref:isAlive() then 																	-- if the entity is still alive
 		if ref[methodName] == nil then 														-- don't have that tag
@@ -308,3 +318,8 @@ function SOEBaseObject:fireMethod(ref,methodName,...)
 end 
 
 _G.SOE = SOE
+
+-- TODO: State Machine ? Attached to Scenes ?
+-- TODO: Pong - add score with mixin 
+-- TODO: Flappy Circle
+-- TODO: Add buttons to controller.
