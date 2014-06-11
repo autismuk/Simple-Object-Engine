@@ -12,7 +12,44 @@ require("soe.soe")
 require("soe.core")
 require("soe.controller"):new({})
 
+--- ************************************************************************************************************************************************************************
+--//	Score class. Done via messaging, could be done by directly accessing object equally.
+--- ************************************************************************************************************************************************************************
+
+local Score = SOE:getBaseClass():new()
+
+--//	Create a new score
+
+function Score:constructor()
+	self.scoreText = display.newText("",display.contentWidth-20,20,native.systemFont,32)		-- Score text on screen
+	self.scoreText.anchorX,self.scoreText.anchorY = 1,0
+	self.scoreText:setFillColor(1,0,1)
+	self.score = 0 																				-- actual score
+	self:updateScore() 																			-- update it
+	self:tag("score") 																			-- tag as score object
+end 
+
+--// 	Destroy a score
+
+function Score:destructor()
+	self.scoreText:removeSelf()
+end 
+
+--//	Update the score text from the score
+
+function Score:updateScore()
+	self.scoreText.text = ("000000" .. self.score):sub(-6)
+end 
+
+--//	Handle a message sent to 'score', the first parameter is tha amount to add
+function Score:onMessage(message)
+	self.score = self.score + tonumber(message.contents[1]) 									-- add to score
+	self:updateScore() 																			-- update display.
+end 
+
+--- ************************************************************************************************************************************************************************
 --//	Bat class.
+--- ************************************************************************************************************************************************************************
 
 local Bat = SOE:getBaseClass():new()
 
@@ -57,7 +94,9 @@ function Bat:onMessage(message)
 	end
 end 
 
+--- ************************************************************************************************************************************************************************
 --//	Ball class
+--- ************************************************************************************************************************************************************************
 
 local Ball = SOE:getBaseClass():new()
 
@@ -101,6 +140,7 @@ function Ball:onUpdate(dTime,dMilliTime)
 	end 
 	if self.ball.x > display.contentWidth - self.radius then 									-- bounce off right
 		self.dx = -1
+		self:sendMessage("score",10)
 	end 
 	if self.ball.x < 0 then  																	-- if off the left
 		self:delete() 																			-- delete yourself (e.g. the ball)
@@ -118,9 +158,14 @@ function Ball:flip(dy)
 	self.dy = dy
 end 
 
+--- ************************************************************************************************************************************************************************
+--																				Main bit
+--- ************************************************************************************************************************************************************************
+
 Bat:new({ x = 32 }) 																			-- create two bats
 Bat:new({ x = display.contentWidth/3 })
 for i = 1,36 do Ball:new({}) end 																-- and lots of balls.
+Score:new({}) 																					-- and a score
 
 SOE:getBaseClass():sendMessageDelayed("ball",1000,"start") 										-- after one second, send them 'start'
 
