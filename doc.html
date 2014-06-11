@@ -1,0 +1,223 @@
+<!DOCTYPE html><html><head><style>body { background:#333; color:#0F0; font-family:Arial,Verdana;} a { color:#0AA } h1 { color:#FF0; } h2 { color:#0FF } table,tr,td { color: #CCC; padding:4px;border:1px solid white; border-collapse:collapse; }</style></head><body>
+<a name="Controller"></a>
+<hr><h1>Controller</h1>
+<p><h3>Extends SOE.getBaseClass()</h3></p>
+<p>Four way controller class</p>
+<p>Methods : <a href="#Controller_constructor"/>constructor</a>,<a href="#Controller_destructor"/>destructor</a>,<a href="#Controller_getX"/>getX</a>,<a href="#Controller_getY"/>getY</a></p><hr><a name="Controller_constructor"></a>
+<h2>constructor(info)</h2>
+<table>
+<tr><td>info</td><td>table</td><td>contains (optionally x,y and r)</td></tr>
+</table>
+<p>Create a new controller.</p>
+<a name="Controller_createDisplay"></a>
+<a name="Controller_destructor"></a>
+<h2>destructor()</h2>
+<p>Remove a controller.</p>
+<a name="Controller_getX"></a>
+<h2>getX()</h2>
+<table>
+<tr><td>return</td><td>number</td><td>value from -1 to 1</td></tr>
+</table>
+<p>Get current stick position horizontal</p>
+<a name="Controller_getY"></a>
+<h2>getY()</h2>
+<table>
+<tr><td>return</td><td>number</td><td>value from -1 to 1</td></tr>
+</table>
+<p>Get current stick position vertical</p>
+<a name="Controller_minimax"></a>
+<a name="Controller_touch"></a>
+<a name="MessageObject"></a>
+<hr><h1>MessageObject</h1>
+<p><h3>Extends SOE.getBaseClass()</h3></p>
+<p>Inter object messaging system. Messages can take any form you like, they are stored as variable arguments. The first element is either a string (representing a tag or tags for a query) or a table (representing an object to receive the message). Hence messages can be sent to groups or to individuals. Messages are always queued, and dispatched on an update tick.</p>
+<p>Methods : <a href="#MessageObject_constructor"/>constructor</a>,<a href="#MessageObject_destructor"/>destructor</a>,<a href="#MessageObject_sendMessage"/>sendMessage</a>,<a href="#MessageObject_sendMessageDelayed"/>sendMessageDelayed</a></p><hr><a name="MessageObject_constructor"></a>
+<h2>constructor(init)</h2>
+<table>
+<tr><td>init</td><td></td><td></td></tr>
+</table>
+<p>Constructor</p>
+<a name="MessageObject_destructor"></a>
+<h2>destructor()</h2>
+<p>Destructor</p>
+<a name="MessageObject_onUpdate"></a>
+<a name="MessageObject_sendMessage"></a>
+<h2>sendMessage(recipients,sender)</h2>
+<table>
+<tr><td>recipients</td><td>table/string</td><td>Either an object reference, or a list of tags who will receive this.</td></tr>
+<tr><td>sender</td><td>table</td><td>Which object sent it.</td></tr>
+</table>
+<p>Send Message now. Note that this doesn't mean now-now, it means, the next time the message object is updated. Messages should not be used synchronously !</p>
+<a name="MessageObject_sendMessageDelayed"></a>
+<h2>sendMessageDelayed(recipients,sender,delay)</h2>
+<table>
+<tr><td>recipients</td><td>table/string</td><td>Either an object reference, or a list of tags who will receive this.</td></tr>
+<tr><td>sender</td><td>table</td><td>Which object sent it.</td></tr>
+<tr><td>delay</td><td>number</td><td>Number of milliseconds to elapse before it is dispatched.</td></tr>
+</table>
+<p>Send message in the future - will be sent after a specified timer period has elapsed.</p>
+<a name="SOE"></a>
+<hr><h1>SOE</h1>
+<p><h3>Extends Base</h3></p>
+<p>The SOE object is a singleton which keeps track of game objects.</p>
+<p>Methods : <a href="#SOE_(constructor)"/>(constructor)</a>,<a href="#SOE_connect"/>connect</a>,<a href="#SOE_delete"/>delete</a>,<a href="#SOE_deleteAll"/>deleteAll</a>,<a href="#SOE_getBaseClass"/>getBaseClass</a>,<a href="#SOE_query"/>query</a></p><hr><a name="SOE_(constructor)"></a>
+<h2>(constructor)()</h2>
+<p>SOE Constructor</p>
+<a name="SOE_addTag"></a>
+<a name="SOE_attach"></a>
+<a name="SOE_connect"></a>
+<h2>connect(object,data)</h2>
+<table>
+<tr><td>object</td><td>table</td><td>object to be introduced</td></tr>
+<tr><td>data</td><td>table</td><td>constructor parameter.</td></tr>
+</table>
+<p>Connect an object not created via the usual method (e.g. a mixin on an already existing object) into the system as if it was a real object</p>
+<a name="SOE_createTagList"></a>
+<a name="SOE_delete"></a>
+<h2>delete()</h2>
+<p>SOE destructor. This reinitialises the object to empty so it can be reused.</p>
+<a name="SOE_deleteAll"></a>
+<h2>deleteAll()</h2>
+<p>Delete all Game Objects, also checks counters are zero and tag index lists are empty.</p>
+<a name="SOE_detach"></a>
+<a name="SOE_getBaseClass"></a>
+<h2>getBaseClass()</h2>
+<table>
+<tr><td>return</td><td>class</td><td>Game Object Prototype</td></tr>
+</table>
+<p>Access the prototype for a Game Object Base Class.</p>
+<a name="SOE_nameObject"></a>
+<a name="SOE_query"></a>
+<h2>query(tagList)</h2>
+<table>
+<tr><td>tagList</td><td>table</td><td>table of tags (if empty, returns all objects)</td></tr>
+<tr><td>return</td><td>hash</td><td>table of ref => ref of matching tags, or nil.</td></tr>
+</table>
+<p>Query the tag database, return a list of objects with the tag(s) or nil if there are none. Note that multiple tag queries are not optimised or cache, but single tag queries are very fast.</p>
+<a name="SOE_removeTag"></a>
+<a name="SOE_tableSize"></a>
+<a name="SOEBaseObject"></a>
+<hr><h1>SOEBaseObject</h1>
+<p><h3>Extends Base</h3></p>
+<p>This is the base object from which all derive. If you create a mixin object then you will have to decorate it with a constructor/destructor if you want one and attach it manually.</p>
+<p>Methods : <a href="#SOEBaseObject_constructor"/>constructor</a>,<a href="#SOEBaseObject_delete"/>delete</a>,<a href="#SOEBaseObject_destructor"/>destructor</a>,<a href="#SOEBaseObject_detag"/>detag</a>,<a href="#SOEBaseObject_fireMethod"/>fireMethod</a>,<a href="#SOEBaseObject_isAlive"/>isAlive</a>,<a href="#SOEBaseObject_name"/>name</a>,<a href="#SOEBaseObject_process"/>process</a>,<a href="#SOEBaseObject_query"/>query</a>,<a href="#SOEBaseObject_tag"/>tag</a></p><hr><a name="SOEBaseObject_(constructor)"></a>
+<a name="SOEBaseObject_constructor"></a>
+<h2>constructor(data)</h2>
+<table>
+<tr><td>data</td><td>table</td><td>Object data for the game object.</td></tr>
+</table>
+<p>Constructor for game object</p>
+<a name="SOEBaseObject_delete"></a>
+<h2>delete()</h2>
+<p>Instruct object to self-destroy, also removes itself from the system.</p>
+<a name="SOEBaseObject_destructor"></a>
+<h2>destructor()</h2>
+<p>Destructor for game object</p>
+<a name="SOEBaseObject_detag"></a>
+<h2>detag(tagList)</h2>
+<table>
+<tr><td>tagList</td><td>string</td><td>tag name or comma seperated list of tags</td></tr>
+<tr><td>return</td><td>object</td><td>chainable</td></tr>
+</table>
+<p>Remove tag or tags from a game object</p>
+<a name="SOEBaseObject_fireMethod"></a>
+<h2>fireMethod(ref,methodName)</h2>
+<table>
+<tr><td>ref</td><td>object</td><td>object reference</td></tr>
+<tr><td>methodName</td><td>string</td><td>name of method to call</td></tr>
+<tr><td>return</td><td>boolean</td><td>true if successfully called. Failures will log errors.</td></tr>
+</table>
+<p>Call the given method (by name) on the given reference.</p>
+<a name="SOEBaseObject_isAlive"></a>
+<h2>isAlive()</h2>
+<table>
+<tr><td>return</td><td>boolean</td><td>true if alive.</td></tr>
+</table>
+<p>Check to see if object has not been destroyed. This needs to be done when processing tag lists, unless you know for an absolute fact that you aren't removing objects when doing so.</p>
+<a name="SOEBaseObject_name"></a>
+<h2>name(name)</h2>
+<table>
+<tr><td>name</td><td>string</td><td>identifier to use.</td></tr>
+<tr><td>return</td><td>object</td><td>chainable</td></tr>
+</table>
+<p>Name an object - make it accessible via SOE.e</p>
+<a name="SOEBaseObject_process"></a>
+<h2>process(methodName,entities)</h2>
+<table>
+<tr><td>methodName</td><td>string</td><td>name of method to call</td></tr>
+<tr><td>entities</td><td>table</td><td>table of ref=>ref</td></tr>
+<tr><td>return</td><td>boolean</td><td>true if successfully called. Failures will log errors.</td></tr>
+</table>
+<p>Call a named class method on all the entities in the entity list.</p>
+<a name="SOEBaseObject_query"></a>
+<h2>query(tagList)</h2>
+<table>
+<tr><td>tagList</td><td>string</td><td>CSV List of tags, or table of tags.</td></tr>
+<tr><td>return</td><td>hash</td><td>table of ref => ref of matching tags, or nil.</td></tr>
+</table>
+<p>Query the tag database, return a list of objects with the tag(s) or nil if there are none.</p>
+<a name="SOEBaseObject_tag"></a>
+<h2>tag(tagList)</h2>
+<table>
+<tr><td>tagList</td><td>string</td><td>tag name or comma seperated list of tags</td></tr>
+<tr><td>return</td><td>object</td><td>chainable</td></tr>
+</table>
+<p>Add tag or tags to a game object</p>
+<a name="TimerObject"></a>
+<hr><h1>TimerObject</h1>
+<p><h3>Extends SOE.getBaseClass()</h3></p>
+<p></p>
+<p>Methods : <a href="#TimerObject_addMultipleEvent"/>addMultipleEvent</a>,<a href="#TimerObject_addOneEvent"/>addOneEvent</a>,<a href="#TimerObject_addRepeatingEvent"/>addRepeatingEvent</a>,<a href="#TimerObject_constructor"/>constructor</a>,<a href="#TimerObject_destructor"/>destructor</a>,<a href="#TimerObject_removeEvent"/>removeEvent</a></p><hr><a name="TimerObject__addEvent"></a>
+<a name="TimerObject_addMultipleEvent"></a>
+<h2>addMultipleEvent(target,delay,repeatCount,marker)</h2>
+<table>
+<tr><td>target</td><td>object</td><td>Object which should have an onTimer() handler</td></tr>
+<tr><td>delay</td><td>number</td><td>Timer time in ms</td></tr>
+<tr><td>repeatCount</td><td>number</td><td>Number of repeats, 1 upwards. -1 will run until cancelled.</td></tr>
+<tr><td>marker</td><td>string</td><td>optional identifying marker</td></tr>
+<tr><td>return</td><td>number</td><td>Internal ID of timer</td></tr>
+</table>
+<p>Fire the timer event a specific number of times.</p>
+<a name="TimerObject_addOneEvent"></a>
+<h2>addOneEvent(target,delay,marker)</h2>
+<table>
+<tr><td>target</td><td>object</td><td>Object which should have an onTimer() handler</td></tr>
+<tr><td>delay</td><td>number</td><td>Timer time in ms</td></tr>
+<tr><td>marker</td><td>string</td><td>optional identifying marker</td></tr>
+<tr><td>return</td><td>number</td><td>Internal ID of timer</td></tr>
+</table>
+<p>Fire the timer event once.</p>
+<a name="TimerObject_addRepeatingEvent"></a>
+<h2>addRepeatingEvent(target,delay,marker)</h2>
+<table>
+<tr><td>target</td><td>object</td><td>Object which should have an onTimer() handler</td></tr>
+<tr><td>delay</td><td>number</td><td>Timer time in ms</td></tr>
+<tr><td>marker</td><td>string</td><td>optional identifying marker</td></tr>
+<tr><td>return</td><td>number</td><td>Internal ID of timer</td></tr>
+</table>
+<p>Fire the timer event at regular intervals until cancelled.</p>
+<a name="TimerObject_constructor"></a>
+<h2>constructor()</h2>
+<p>Constructor</p>
+<a name="TimerObject_destructor"></a>
+<h2>destructor()</h2>
+<p>Destructor</p>
+<a name="TimerObject_onUpdate"></a>
+<a name="TimerObject_removeEvent"></a>
+<h2>removeEvent(timerID)</h2>
+<table>
+<tr><td>timerID</td><td>number</td><td>Event you want to remove.</td></tr>
+</table>
+<p>Remove a current event</p>
+<a name="UpdateObject"></a>
+<hr><h1>UpdateObject</h1>
+<p><h3>Extends SOE.getBaseClass()</h3></p>
+<p>Update Object, does frame based updates on anything tagged with the update tag. Anything tagged wth 'update' has its onUpdate() method called every frame.</p>
+<p>Methods : <a href="#UpdateObject_constructor"/>constructor</a>,<a href="#UpdateObject_destructor"/>destructor</a></p><hr><a name="UpdateObject_constructor"></a>
+<h2>constructor()</h2>
+<p>Constructor</p>
+<a name="UpdateObject_destructor"></a>
+<h2>destructor()</h2>
+<p>Destructor</p>
+<a name="UpdateObject_enterFrame"></a>
+<hr><p><i>LUA Autodoc by Paul Robson 2014</i></p><hr></body></html>

@@ -19,6 +19,7 @@ local Controller = SOE.getBaseClass():new()
 
 --//	Create a new controller.
 --//	@info 	[table]			contains (optionally x,y and r)
+
 function Controller:constructor(info)
 	local x = info.x
 	local y = info.y 
@@ -37,7 +38,7 @@ function Controller:constructor(info)
 	self:name("controller")													-- it is called 'controller'.
 end 
 
---//	Create display. Can be pretty much anything, except there must be a member 'button' which is the moveable button
+--//%	Create display. Can be pretty much anything, except there must be a member 'button' which is the moveable button
 --//	(may be a group itself) and it needs to be centred around 0,0 in the group and the working max radius is the outer one.
 --//	@ri 	[number]			inner radius
 --//	@ro 	[number]			outer radius
@@ -65,7 +66,7 @@ function Controller:destructor()
 	self.group = nil self.outerRadius = nil self.innerRadius = nil self.button = nil
 end
 
---//	Handle touches
+--//%	Handle touches
 --//	@e 	[event]			event info
 
 function Controller:touch(e)
@@ -81,7 +82,7 @@ function Controller:touch(e)
 	end
 end
 
---//	Force number into range -1 .. 1
+--//%	Force number into range -1 .. 1
 --//	@a 	[number]		number to force
 --//	@result [number]	result
 

@@ -8,9 +8,9 @@
 ---
 --- ************************************************************************************************************************************************************************
 
-require("soe.soe")
-require("soe.core")
-require("soe.controller"):new({})
+require("system.soe.soe")
+require("system.soe.core")
+require("system.soe.controller"):new({})
 
 --- ************************************************************************************************************************************************************************
 --//	Score class. Done via messaging, could be done by directly accessing object equally. This is a mixin class and shows how they are created.

@@ -29,7 +29,7 @@ function UpdateObject:destructor()
 	Runtime:removeEventListener("enterFrame",self) 											-- remove RTEL
 end 
 
---//	Update enterFrame handler. Works out the dt value in both seconds and milliseconds, and dispatches to all 
+--//%	Update enterFrame handler. Works out the dt value in both seconds and milliseconds, and dispatches to all 
 --//	update tagged objects.
 
 function UpdateObject:enterFrame()
@@ -130,7 +130,7 @@ function TimerObject:destructor()
 	timerEvents = {}
 end 
 
---//	Called on update (e.g. enterFrame)
+--//%	Called on update (e.g. enterFrame)
 --//	@dt 	[number] 	delta time in seconds
 --//	@dms 	[number] 	delta time in milliseconds
 
@@ -174,7 +174,7 @@ end
 --//	queued, and dispatched on an update tick.
 --- ************************************************************************************************************************************************************************
 
-local MessageObject = SOE:getBaseClass():new() 												-- messaging object prototype.
+local MessageObject = SOE.getBaseClass():new() 												-- messaging object prototype.
 
 --//	Constructor
 
@@ -209,7 +209,7 @@ function MessageObject:sendMessageDelayed(recipients,sender,delay,...)
 	self.currentMessages[#self.currentMessages+1] = newMessage 								-- add message to  internal list.
 end 
 
---//	Called on frame update. Dispatches all messages in the queue, if due, and those that aren't due to be sent yet are
+--//%	Called on frame update. Dispatches all messages in the queue, if due, and those that aren't due to be sent yet are
 --//	pushed back into the queue.
 
 function MessageObject:onUpdate()
