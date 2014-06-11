@@ -13,17 +13,16 @@ require("soe.core")
 require("soe.controller"):new({})
 
 --- ************************************************************************************************************************************************************************
---//	Score class. Done via messaging, could be done by directly accessing object equally.
+--//	Score class. Done via messaging, could be done by directly accessing object equally. This is a mixin class and shows how they are created.
 --- ************************************************************************************************************************************************************************
 
-local Score = SOE:getBaseClass():new()
+local Score = display.newText("?",display.contentWidth-20,20,native.systemFont,32)				-- Score text on screen
 
 --//	Create a new score
 
-function Score:constructor()
-	self.scoreText = display.newText("",display.contentWidth-20,20,native.systemFont,32)		-- Score text on screen
-	self.scoreText.anchorX,self.scoreText.anchorY = 1,0
-	self.scoreText:setFillColor(1,0,1)
+function Score:constructor(data)
+	self.anchorX,self.anchorY = 1,0
+	self:setFillColor(1,0,1)
 	self.score = 0 																				-- actual score
 	self:updateScore() 																			-- update it
 	self:tag("score") 																			-- tag as score object
@@ -32,13 +31,13 @@ end
 --// 	Destroy a score
 
 function Score:destructor()
-	self.scoreText:removeSelf()
+	self:removeSelf()
 end 
 
 --//	Update the score text from the score
 
 function Score:updateScore()
-	self.scoreText.text = ("000000" .. self.score):sub(-6)
+	self.text = ("000000" .. self.score):sub(-6)
 end 
 
 --//	Handle a message sent to 'score', the first parameter is tha amount to add
@@ -46,6 +45,9 @@ function Score:onMessage(message)
 	self.score = self.score + tonumber(message.contents[1]) 									-- add to score
 	self:updateScore() 																			-- update display.
 end 
+
+SOE:connect(Score) 																				-- Connect Score to the system, set up its methods (SendMessage etc.)
+																								-- finally call constructor.
 
 --- ************************************************************************************************************************************************************************
 --//	Bat class.
@@ -77,6 +79,7 @@ end
 
 function Bat:onUpdate(dTime,dmilliTime)
 	self.bat.y = self.bat.y + SOE.e.controller:getY() * dTime * display.contentHeight 			-- adjust vertical position - dTime makes it consistent speed.
+																								-- note we directly access the controller object here through SOE.e
 	self.bat.y = math.max(self.bat.y,self.height/2) 											-- fit into top and bottom.
 	self.bat.y = math.min(self.bat.y,display.contentHeight-self.height/2)
 end 
@@ -108,7 +111,7 @@ function Ball:constructor()
 	self.dy = math.random(5,10)/10
 	self.ball = display.newCircle(0,0,self.radius) 												-- ball graphic
 	self.ball:setFillColor(0,1,1) 	
-	self.ball.x = display.contentWidth / 2 														-- initial position
+	self.ball.x = math.random(display.contentWidth / 2,display.contentWidth - self.radius) 		-- initial position
 	self.ball.y = math.random(self.radius,display.contentHeight-self.radius)
 	self.speed = 500 																			-- how fast it goes.
 	self:tag("ball") 																			-- tagged as ball type, but not update. This is done by a delayed send 
@@ -165,7 +168,6 @@ end
 Bat:new({ x = 32 }) 																			-- create two bats
 Bat:new({ x = display.contentWidth/3 })
 for i = 1,36 do Ball:new({}) end 																-- and lots of balls.
-Score:new({}) 																					-- and a score
 
 SOE:getBaseClass():sendMessageDelayed("ball",1000,"start") 										-- after one second, send them 'start'
 
@@ -173,5 +175,5 @@ SOE:getBaseClass():sendMessageDelayed("ball",1000,"start") 										-- after on
 
 local o1 = SOE:getBaseClass():new({}) 															-- create some object
 local eventID = SOE:getBaseClass():addRepeatingEvent(o1,300,"test") 							-- add a repeating timer event.
-
-function o1:onTimer(ref,tag) print("A timer demo",ref,tag,c1) end 								-- and a handler.
+function o1:onTimer(ref,tag) print("A timer demo",ref,tag,c1) end 								-- and a handler - will run until stopped programmatically or timer object deleted
+																								-- (in practice, on SOE:deleteAll())

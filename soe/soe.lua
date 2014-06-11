@@ -65,7 +65,7 @@ function SOE:getBaseClass()
 	return SOEBaseObject 
 end 
 
---//	Attach an object to the system. It is added to the indices and decorated with the needed default functions, currently tag, detag, name and delete.
+--//%	Attach an object to the system. It is added to the indices and decorated with the needed default functions, currently tag, detag, name and delete.
 --//	@object 	[object]		Object to attach to SOE
 
 function SOE:attach(object)
@@ -81,7 +81,7 @@ function SOE:attach(object)
 	end
 end 
 
---//	Detach an object from the system. It removes its reference, any usage in SOE.e and removes itself from the tag lists
+--//%	Detach an object from the system. It removes its reference, any usage in SOE.e and removes itself from the tag lists
 --//	@object 	[object]		Object to detach from SOE
 
 function SOE:detach(object)
@@ -191,6 +191,17 @@ function SOE:query(tagList)
 	return result
 end 
 
+--//	Connect an object not created via the usual method (e.g. a mixin on an already existing object) into the system as if it was a real object 
+--//	@object 	[table]					object to be introduced
+--//	@data 		[table]					constructor parameter.
+
+function SOE:connect(object,data)
+	object.__SOE = SOE 																		-- set up as normal with reference to SOE.
+	object.__isAlive = true  																-- mark object as alive
+	self:attach(object) 																	-- attach object to SOE system
+	object:constructor(data or {}) 															-- finally call the constructor.
+end
+
 SOE:initialise() 																			-- create the single instance
 SOE.new = nil 																				-- disable its constructor.
 
@@ -207,10 +218,7 @@ SOEBaseObject = Base:new()
 function SOEBaseObject:initialise(data)
 	if data == nil then return end 															-- being used to create a new object, not an actual new object.
 	assert(type(data) == "table")
-	self.__SOE = SOE 																		-- set an SOE reference for general use
-	self.__isAlive = true 																	-- mark as alive.
-	self.__SOE:attach(self) 																-- attach the object and decorate it
-	self:constructor(data) 																	-- call its SOE constructor 
+	SOE:connect(self,data) 																	-- connect object in and call constructor.
 end 
 
 --//	Constructor for game object
@@ -320,6 +328,5 @@ end
 _G.SOE = SOE
 
 -- TODO: State Machine ? Attached to Scenes ?
--- TODO: Pong - add score with mixin 
 -- TODO: Flappy Circle
 -- TODO: Add buttons to controller.
